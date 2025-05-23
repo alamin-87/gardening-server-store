@@ -3,7 +3,7 @@ const app = express();
 const cors = require("cors");
 const port = 4000;
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 app.use(cors());
 app.use(express.json());
@@ -32,6 +32,7 @@ async function run() {
     const userCollection = client
       .db("gardeningDB")
       .collection("usersCollection");
+    const gardeningTips = client.db("gardeningDB").collection("gardeningTips");
     // --------users info-----
     //  user get data
     app.get("/users", async (req, res) => {
@@ -61,6 +62,38 @@ async function run() {
       const result = await userCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
+    //  ----------------user data end---------------
+    // -----------------tips start------------------
+    // ✅ GET all tips (limit to 6, you can change or remove the limit)
+    app.get("/tips", async (req, res) => {
+      const result = await gardeningTips.find().limit(6).toArray();
+      res.send(result);
+    });
+
+    // ✅ POST a new tip
+    app.post("/tips", async (req, res) => {
+      const newTip = req.body;
+      const result = await gardeningTips.insertOne(newTip);
+      res.send(result);
+    });
+
+    // Optional: GET public tips only
+    app.get("/tips/public", async (req, res) => {
+      const result = await gardeningTips
+        .find({ availability: "Public" })
+        .limit(6)
+        .toArray();
+      res.send(result);
+    });
+
+    // find one item
+    app.get("/tips/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await gardeningTips.findOne(query);
+      res.send(result);
+    });
+    // -----------------tips end--------------------
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
